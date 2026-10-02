@@ -1,0 +1,179 @@
+:root {
+  --bg-color: #0b0f17;
+  --win-bg: #c0c0c0;
+  --win-border-light: #ffffff;
+  --win-border-dark: #808080;
+  --win-border-black: #000000;
+  --win-blue: #000080;
+  --win-blue-light: #1084d0;
+  --term-amber: #ffb000;
+  --term-green: #33ff33;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'MS Sans Serif', Tahoma, monospace, sans-serif;
+  color: #fff;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Retro CRT Container */
+#crt-wrapper {
+  position: relative;
+  width: 960px;
+  height: 640px;
+  background: #000;
+  border-radius: 12px;
+  box-shadow: 0 0 60px rgba(0, 240, 255, 0.12), inset 0 0 90px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  border: 12px solid #1e232a;
+}
+
+/* CRT Phosphor Scanlines & Vignette */
+#crt-wrapper::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%),
+              radial-gradient(circle at center, transparent 65%, rgba(0, 0, 0, 0.5) 100%);
+  background-size: 100% 4px, 100% 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #06090e;
+}
+
+/* Retro Windows 98 / 2000 Window Styles */
+.retro-window {
+  position: absolute;
+  background: var(--win-bg);
+  border-top: 2px solid var(--win-border-light);
+  border-left: 2px solid var(--win-border-light);
+  border-right: 2px solid var(--win-border-black);
+  border-bottom: 2px solid var(--win-border-black);
+  box-shadow: 4px 4px 14px rgba(0, 0, 0, 0.6);
+  color: #000;
+  font-size: 12px;
+  z-index: 100;
+}
+
+.title-bar {
+  background: linear-gradient(90deg, var(--win-blue), var(--win-blue-light));
+  padding: 4px 6px;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+}
+
+.title-bar-btn {
+  width: 16px;
+  height: 14px;
+  background: var(--win-bg);
+  border-top: 1px solid var(--win-border-light);
+  border-left: 1px solid var(--win-border-light);
+  border-right: 1px solid var(--win-border-black);
+  border-bottom: 1px solid var(--win-border-black);
+  color: #000;
+  font-size: 9px;
+  line-height: 10px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+}
+
+.win-body {
+  padding: 14px;
+}
+
+.retro-btn {
+  padding: 6px 14px;
+  background: var(--win-bg);
+  border-top: 2px solid var(--win-border-light);
+  border-left: 2px solid var(--win-border-light);
+  border-right: 2px solid var(--win-border-black);
+  border-bottom: 2px solid var(--win-border-black);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 80px;
+}
+
+.retro-btn:active {
+  border-top: 2px solid var(--win-border-black);
+  border-left: 2px solid var(--win-border-black);
+  border-right: 2px solid var(--win-border-light);
+  border-bottom: 2px solid var(--win-border-light);
+}
+
+/* HUD Overlay */
+#hud {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--term-amber);
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.6);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hud-badge {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border: 1px solid var(--term-amber);
+  border-radius: 4px;
+}
+
+#instructions {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #444;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Crash Screen Shake */
+.screen-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both infinite;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-3px, 1px, 0); }
+  20%, 80% { transform: translate3d(4px, -2px, 0); }
+  30%, 50%, 70% { transform: translate3d(-6px, 4px, 0); }
+  40%, 60% { transform: translate3d(6px, -4px, 0); }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRASH TO DESKTOP: Fatal Exception (BYOG Edition)</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="crt-wrapper">
+    <!-- Top HUD Bar -->
+    <div id="hud">
+      <div class="hud-badge" id="hud-level">SYS::LEVEL 1/4</div>
+      <div class="hud-badge" id="hud-target">OBJECTIVE: INITIALIZING...</div>
+      <div class="hud-badge" id="hud-fps">STABILITY: 100% (60 FPS)</div>
+    </div>
+
+    <!-- 2D Physics & Render Canvas -->
+    <canvas id="gameCanvas" width="960" height="640"></canvas>
+
+    <!-- Bottom Instructions Banner -->
+    <div id="instructions">🖱️ Drag and reposition devices to break engine stability laws.</div>
+
+    <!-- Draggable Retro OS Crash Modal Dialog -->
+    <div id="crash-modal" class="retro-window" style="display: none; width: 460px; top: 180px; left: 250px;">
+      <div class="title-bar">
+        <span id="modal-title">⚠️ SYSTEM EXCEPTION CAUGHT: 0x00FF4B22</span>
+        <div class="title-bar-btn" onclick="window.app.ui.hideCrashModal()">✕</div>
+      </div>
+      <div class="win-body">
+        <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px;">
+          <div style="font-size: 38px;">💥</div>
+          <div>
+            <strong id="crash-title" style="color: #900; font-size: 13px;">FATAL EXCEPTION AT 0x00FF4B22</strong>
+            <p id="crash-desc" style="margin-top: 6px; font-size: 11px; line-height: 1.4; color: #222;">
+              Raycast function recursion depth exceeded 500 nested calls.
+            </p>
+            <div id="crash-dump" style="margin-top: 8px; font-family: monospace; font-size: 10px; background: #e5e7eb; padding: 6px; border: 1px inset #9ca3af; border-radius: 2px;">
+              Faulting Thread: 0x8A4 (Renderer_Raytracer)<br>
+              Call Stack: 512 frames allocated, 0 returned.<br>
+              Vector: Portal Alpha ⇄ Portal Beta loop.
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="retro-btn" id="btn-retry">Retry Test</button>
+          <button class="retro-btn" id="btn-next" style="border-color: #008000; background: #dfffd8;">Next Bug ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts Modular Pipeline -->
+  <script src="src/audio.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/levels.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
