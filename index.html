@@ -8,35 +8,119 @@
 </head>
 <body>
 
-  <div id="crt-wrapper">
-    <!-- Top HUD Bar -->
-    <div id="hud">
-      <div class="hud-badge" id="hud-level">SYS::LEVEL 1/4</div>
-      <div class="hud-badge" id="hud-target">OBJECTIVE: INITIALIZING...</div>
-      <div class="hud-badge" id="hud-fps">STABILITY: 100% (60 FPS)</div>
+  <div id="dashboard-container">
+    <!-- Cyberpunk Header Navigation -->
+    <header id="cyber-nav">
+      <div class="brand-badge">
+        <h1>CRASH TO DESKTOP</h1>
+        <span class="brand-tag">BYOG 24H JAM</span>
+      </div>
+
+      <!-- Level Selection Tabs -->
+      <div class="level-selector">
+        <button class="level-pill active" data-level="1">01 STACK</button>
+        <button class="level-pill" data-level="2">02 DIV/0</button>
+        <button class="level-pill" data-level="3">03 HEAP</button>
+        <button class="level-pill" data-level="4">04 NULL_PTR</button>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="nav-actions">
+        <button class="cyber-btn" id="btn-toggle-hint">💡 HINT</button>
+        <button class="cyber-btn" id="btn-reset-level">↺ RESET</button>
+        <button class="cyber-btn" id="btn-toggle-audio">🔊 Audio ON</button>
+      </div>
+    </header>
+
+    <!-- Main Game Viewport -->
+    <div id="viewport-card">
+      <canvas id="gameCanvas" width="1000" height="560"></canvas>
     </div>
 
-    <!-- 2D Physics & Render Canvas -->
-    <canvas id="gameCanvas" width="960" height="640"></canvas>
+    <!-- Live Telemetry & Objective Dashboard -->
+    <section id="telemetry-dashboard">
+      <!-- Left: Real-Time Diagnostic Gauges -->
+      <div class="dash-panel">
+        <div class="dash-panel-title">
+          <span>⚡ Live Kernel Telemetry</span>
+          <span style="color: var(--accent-cyan);">DIAGNOSTIC CORE v4.2</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="meter-box">
+            <div class="meter-label">
+              <span>STACK RECURSION DEPTH</span>
+              <span id="label-stack-val">MAX 500</span>
+            </div>
+            <div class="meter-bar-container">
+              <div class="meter-bar-fill" id="telemetry-stack" style="width: 0%;">0 / 500</div>
+            </div>
+          </div>
 
-    <!-- Bottom Instructions Banner -->
-    <div id="instructions">🖱️ Drag and reposition devices to break engine stability laws.</div>
+          <div class="meter-box">
+            <div class="meter-label">
+              <span>DYNAMIC HEAP BUFFER</span>
+              <span>LIMIT 128 MB</span>
+            </div>
+            <div class="meter-bar-container">
+              <div class="meter-bar-fill" id="telemetry-memory" style="width: 0%; background: var(--accent-magenta);">0 / 128 MB</div>
+            </div>
+          </div>
+
+          <div class="meter-box">
+            <div class="meter-label">
+              <span>ALU ARITHMETIC CORE</span>
+              <span>FLOATING POINT</span>
+            </div>
+            <div style="font-family: monospace; font-size: 13px; font-weight: bold; color: var(--accent-cyan); padding-top: 2px;" id="telemetry-alu">
+              NORMAL
+            </div>
+          </div>
+
+          <div class="meter-box">
+            <div class="meter-label">
+              <span>KERNEL INTEGRITY</span>
+              <span>RUNTIME THRESHOLD</span>
+            </div>
+            <div class="meter-bar-container">
+              <div class="meter-bar-fill" id="telemetry-stability" style="width: 100%; background: var(--accent-green);">100%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Mission Directive & Instructions -->
+      <div class="dash-panel">
+        <div class="dash-panel-title">
+          <span id="hud-level-title">SYS::ZONE 01 — STACK OVERFLOW</span>
+          <span style="color: var(--accent-amber);">TARGET: CRASH ENGINE</span>
+        </div>
+        <div class="objective-box">
+          <div class="objective-title" id="hud-objective-text">TRAP LASER IN INFINITE PORTAL LOOP (> 500 BOUNCES)</div>
+          <p class="instructions-text" id="hud-instructions-text">Drag Portal Alpha (Cyan) into the laser path, and align Portal Beta (Magenta) facing straight back into Alpha.</p>
+
+          <!-- Retractable Hint Drawer -->
+          <div id="hint-panel">
+            <strong>TACTICAL HINT:</strong> <span id="txt-hint">Place Cyan Portal in the laser path. Move Magenta Portal to the right, aiming its arrow back into Cyan's aperture.</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Draggable Retro OS Crash Modal Dialog -->
-    <div id="crash-modal" class="retro-window" style="display: none; width: 460px; top: 180px; left: 250px;">
+    <div id="crash-modal" class="retro-window" style="display: none; width: 480px; top: 180px; left: 260px;">
       <div class="title-bar">
         <span id="modal-title">⚠️ SYSTEM EXCEPTION CAUGHT: 0x00FF4B22</span>
         <div class="title-bar-btn" onclick="window.app.ui.hideCrashModal()">✕</div>
       </div>
       <div class="win-body">
         <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px;">
-          <div style="font-size: 38px;">💥</div>
+          <div style="font-size: 42px;">💥</div>
           <div>
             <strong id="crash-title" style="color: #900; font-size: 13px;">FATAL EXCEPTION AT 0x00FF4B22</strong>
-            <p id="crash-desc" style="margin-top: 6px; font-size: 11px; line-height: 1.4; color: #222;">
+            <p id="crash-desc" style="margin-top: 6px; font-size: 11px; line-height: 1.4; color: #111;">
               Raycast function recursion depth exceeded 500 nested calls.
             </p>
-            <div id="crash-dump" style="margin-top: 8px; font-family: monospace; font-size: 10px; background: #e5e7eb; padding: 6px; border: 1px inset #9ca3af; border-radius: 2px;">
+            <div id="crash-dump" style="margin-top: 8px; font-family: monospace; font-size: 10px; background: #e5e7eb; padding: 8px; border: 1px inset #9ca3af; border-radius: 2px;">
               Faulting Thread: 0x8A4 (Renderer_Raytracer)<br>
               Call Stack: 512 frames allocated, 0 returned.<br>
               Vector: Portal Alpha ⇄ Portal Beta loop.
@@ -44,14 +128,14 @@
           </div>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button class="retro-btn" id="btn-retry">Retry Test</button>
-          <button class="retro-btn" id="btn-next" style="border-color: #008000; background: #dfffd8;">Next Bug ➔</button>
+          <button class="retro-btn" id="btn-retry">Retry Zone</button>
+          <button class="retro-btn" id="btn-next" style="border-color: #008000; background: #bbf7d0;">Next Exploit ➔</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Game Scripts Modular Pipeline -->
+  <!-- Scripts Execution Pipeline -->
   <script src="src/audio.js"></script>
   <script src="src/engine.js"></script>
   <script src="src/levels.js"></script>

@@ -1,5 +1,5 @@
 /**
- * CRASH TO DESKTOP - Meta-OS Window Manager & Crash Reporting UI
+ * CRASH TO DESKTOP - Cyber-Dashboard & Modal UI Manager
  */
 
 class UIManager {
@@ -13,31 +13,72 @@ class UIManager {
     this.btnNext = document.getElementById('btn-next');
     this.btnRetry = document.getElementById('btn-retry');
 
-    this.hudLevel = document.getElementById('hud-level');
-    this.hudTarget = document.getElementById('hud-target');
-    this.hudFps = document.getElementById('hud-fps');
-    this.instructions = document.getElementById('instructions');
+    // Telemetry Dashboard Elements
+    this.gaugeStack = document.getElementById('telemetry-stack');
+    this.gaugeMemory = document.getElementById('telemetry-memory');
+    this.gaugeAlu = document.getElementById('telemetry-alu');
+    this.gaugeStability = document.getElementById('telemetry-stability');
+
+    this.txtLevel = document.getElementById('hud-level-title');
+    this.txtObjective = document.getElementById('hud-objective-text');
+    this.txtInstructions = document.getElementById('hud-instructions-text');
+    this.hintPanel = document.getElementById('hint-panel');
+    this.txtHint = document.getElementById('txt-hint');
 
     this.initDraggable(this.modal);
   }
 
-  updateHUD(levelNum, totalLevels, objective, stabilityPercent, fps = 60) {
-    if (this.hudLevel) this.hudLevel.innerText = `SYS::LEVEL ${levelNum}/${totalLevels}`;
-    if (this.hudTarget) this.hudTarget.innerText = `OBJECTIVE: ${objective}`;
-    if (this.hudFps) {
-      this.hudFps.innerText = `STABILITY: ${stabilityPercent}% (${fps} FPS)`;
-      if (stabilityPercent < 30) {
-        this.hudFps.style.color = '#ff3333';
-        this.hudFps.style.borderColor = '#ff3333';
+  updateDashboard(levelNum, levelName, objective, instructions, hint) {
+    if (this.txtLevel) this.txtLevel.innerText = `SYS::ZONE 0${levelNum} — ${levelName}`;
+    if (this.txtObjective) this.txtObjective.innerText = objective;
+    if (this.txtInstructions) this.txtInstructions.innerText = instructions;
+    if (this.txtHint) this.txtHint.innerText = hint;
+
+    // Highlight active level tab
+    document.querySelectorAll('.level-pill').forEach((btn, idx) => {
+      if (idx === levelNum - 1) {
+        btn.classList.add('active');
       } else {
-        this.hudFps.style.color = 'var(--term-amber)';
-        this.hudFps.style.borderColor = 'var(--term-amber)';
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  updateGauges(stackDepth = 0, heapUtil = 0, aluStatus = "NORMAL", stability = 100) {
+    if (this.gaugeStack) {
+      this.gaugeStack.style.width = `${Math.min(100, (stackDepth / 500) * 100)}%`;
+      this.gaugeStack.innerText = `${stackDepth} / 500`;
+    }
+    if (this.gaugeMemory) {
+      this.gaugeMemory.style.width = `${Math.min(100, (heapUtil / 128) * 100)}%`;
+      this.gaugeMemory.innerText = `${heapUtil} / 128 MB`;
+    }
+    if (this.gaugeAlu) {
+      this.gaugeAlu.innerText = aluStatus;
+      if (aluStatus === "NaN (DIV/0)") {
+        this.gaugeAlu.style.color = '#f43f5e';
+      } else {
+        this.gaugeAlu.style.color = '#38bdf8';
+      }
+    }
+    if (this.gaugeStability) {
+      this.gaugeStability.style.width = `${Math.max(0, stability)}%`;
+      this.gaugeStability.innerText = `${Math.round(stability)}%`;
+      if (stability <= 20) {
+        this.gaugeStability.style.backgroundColor = '#f43f5e';
+      } else if (stability <= 60) {
+        this.gaugeStability.style.backgroundColor = '#eab308';
+      } else {
+        this.gaugeStability.style.backgroundColor = '#10b981';
       }
     }
   }
 
-  setInstructions(text) {
-    if (this.instructions) this.instructions.innerText = text;
+  toggleHint() {
+    if (!this.hintPanel) return;
+    const isHidden = this.hintPanel.style.display === 'none' || !this.hintPanel.style.display;
+    this.hintPanel.style.display = isHidden ? 'block' : 'none';
+    window.sfx.playClick();
   }
 
   showCrashModal(data, onNext, onRetry) {
@@ -46,10 +87,10 @@ class UIManager {
     window.sfx.playCrashBuzzer();
     this.triggerScreenShake(true);
 
-    this.modalTitle.innerText = `⚠️ SYSTEM EXCEPTION CAUGHT: ${data.code || '0x00FF'}`;
-    this.crashTitle.innerText = data.title || 'FATAL ENGINE ANOMALY';
-    this.crashDesc.innerText = data.desc || 'An unhandled computational exception violated runtime stability guarantees.';
-    this.crashDump.innerHTML = data.dump || 'Fault Address: 0x00000000<br>Status: EXECUTION_HALTED';
+    this.modalTitle.innerText = `⚠️ SYSTEM FAULT INTERCEPTED: ${data.code || '0x00FF'}`;
+    this.crashTitle.innerText = data.title || 'UNHANDLED COMPUTATIONAL SINGULARITY';
+    this.crashDesc.innerText = data.desc || 'The game engine encountered an unrecoverable logic paradox.';
+    this.crashDump.innerHTML = data.dump || 'Status: EXECUTION_HALTED<br>Address: 0x00000000';
 
     this.btnNext.onclick = () => {
       window.sfx.playClick();
@@ -63,17 +104,16 @@ class UIManager {
       if (onRetry) onRetry();
     };
 
-    // Center window
-    this.modal.style.left = '260px';
+    this.modal.style.left = '250px';
     this.modal.style.top = '170px';
     this.modal.style.display = 'block';
 
     if (data.isVictory) {
-      this.btnNext.innerText = '🏆 Complete Jam';
-      this.btnNext.style.background = '#ffd700';
+      this.btnNext.innerText = '🏆 Restart Jam Run';
+      this.btnNext.style.background = '#facc15';
     } else {
-      this.btnNext.innerText = 'Next Bug ➔';
-      this.btnNext.style.background = '#dfffd8';
+      this.btnNext.innerText = 'Next Exploit ➔';
+      this.btnNext.style.background = '#86efac';
     }
   }
 
@@ -116,9 +156,7 @@ class UIManager {
     });
 
     window.addEventListener('mouseup', () => {
-      if (isDragging) {
-        isDragging = false;
-      }
+      isDragging = false;
     });
   }
 }

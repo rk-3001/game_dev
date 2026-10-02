@@ -1,5 +1,5 @@
 /**
- * CRASH TO DESKTOP - 2D Physics & Raycasting Primitives
+ * CRASH TO DESKTOP - High-Performance 2D Vector Physics & Particle Engine
  */
 
 class Vector2 {
@@ -19,103 +19,260 @@ class Vector2 {
   }
   dot(v) { return this.x * v.x + this.y * v.y; }
   dist(v) { return Math.hypot(this.x - v.x, this.y - v.y); }
+  lerp(target, t) {
+    return new Vector2(
+      this.x + (target.x - this.x) * t,
+      this.y + (target.y - this.y) * t
+    );
+  }
+}
+
+class VisualParticle {
+  constructor(x, y, vx, vy, color = '#00f0ff', life = 1.0, size = 3) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.color = color;
+    this.life = life;
+    this.maxLife = life;
+    this.size = size;
+  }
+
+  update(dt) {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= 0.96;
+    this.vy *= 0.96;
+    this.life -= dt;
+  }
+
+  draw(ctx) {
+    if (this.life <= 0) return;
+    const alpha = Math.max(0, this.life / this.maxLife);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+  }
+
+  emit(x, y, count = 8, color = '#00f0ff', speed = 3, size = 3) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = (0.5 + Math.random() * 0.8) * speed;
+      this.particles.push(new VisualParticle(
+        x,
+        y,
+        Math.cos(angle) * spd,
+        Math.sin(angle) * spd,
+        color,
+        0.3 + Math.random() * 0.4,
+        size
+      ));
+    }
+  }
+
+  update(dt) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.update(dt);
+      if (p.life <= 0) {
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+
+  draw(ctx) {
+    for (const p of this.particles) {
+      p.draw(ctx);
+    }
+  }
 }
 
 class RaycastSolver {
   /**
-   * Raycast through a scene with reflective surfaces
-   * @param {Vector2} origin 
-   * @param {Vector2} dir 
-   * @param {Array} surfaces 
-   * @param {number} maxBounces 
-   * @returns {{ path: Array<Vector2>, bounces: number, crashed: boolean }}
+   * Traces a laser ray through a room with interactive portals and barriers.
    */
-  static trace(origin, dir, surfaces, maxBounces = 500) {
+  static traceWithPortals(origin, dir, portalA, portalB, obstacles = [], maxBounces = 500) {
     let currentOrigin = new Vector2(origin.x, origin.y);
     let currentDir = dir.normalize();
     let path = [currentOrigin];
     let bounces = 0;
-    const maxDistance = 25000;
-    let totalTraveled = 0;
+    const maxSteps = 550;
+    let hitSparkLocations = [];
 
-    while (bounces < maxBounces && totalTraveled < maxDistance) {
+    while (bounces < maxBounces && bounces < maxSteps) {
       let closestHit = null;
-      let minT = Infinity;
-      let hitSurface = null;
+      let minDistance = Infinity;
+      let hitType = null;
 
-      // Check intersection against all active surfaces
-      for (const surf of surfaces) {
-        const hit = this.intersectRaySegment(currentOrigin, currentDir, surf.p1, surf.p2);
-        if (hit && hit.t > 0.001 && hit.t < minT) {
-          minT = hit.t;
-          closestHit = hit;
-          hitSurface = surf;
+      // 1. Check Portal A
+      if (portalA) {
+        const hitA = this.intersectOrientedPortal(currentOrigin, currentDir, portalA);
+        if (hitA && hitA.dist > 1.5 && hitA.dist < minDistance) {
+          minDistance = hitA.dist;
+          closestHit = hitA.point;
+          hitType = 'PORTAL_A';
         }
       }
 
-      if (!closestHit) {
-        // Traveled off-screen or into void
-        const endpoint = currentOrigin.add(currentDir.mul(1200));
-        path.push(endpoint);
-        break;
+      // 2. Check Portal B
+      if (portalB) {
+        const hitB = this.intersectOrientedPortal(currentOrigin, currentDir, portalB);
+        if (hitB && hitB.dist > 1.5 && hitB.dist < minDistance) {
+          minDistance = hitB.dist;
+          closestHit = hitB.point;
+          hitType = 'PORTAL_B';
+        }
       }
 
-      path.push(closestHit.point);
-      totalTraveled += minT;
+      // 3. Check Obstacles
+      for (const obs of obstacles) {
+        const hitObs = this.intersectBox(currentOrigin, currentDir, obs);
+        if (hitObs && hitObs.dist > 1.5 && hitObs.dist < minDistance) {
+          minDistance = hitObs.dist;
+          closestHit = hitObs.point;
+          hitType = 'OBSTACLE';
+        }
+      }
+
+      // 4. Check Canvas Boundaries
+      const hitBounds = this.intersectWorldBounds(currentOrigin, currentDir, 960, 600);
+      if (hitBounds && hitBounds.dist > 0.1 && hitBounds.dist < minDistance) {
+        minDistance = hitBounds.dist;
+        closestHit = hitBounds.point;
+        hitType = 'WALL';
+      }
+
+      if (!closestHit) break;
+
+      path.push(closestHit);
+      hitSparkLocations.push(closestHit);
       bounces++;
 
-      // Reflect direction along surface normal
-      const normal = hitSurface.normal;
-      const dot = currentDir.dot(normal);
-      currentDir = currentDir.sub(normal.mul(2 * dot)).normalize();
-      currentOrigin = closestHit.point.add(currentDir.mul(0.01)); // Offset to avoid self-intersection
+      // Handle Portal Teleportation
+      if (hitType === 'PORTAL_A' && portalB) {
+        // Enters Portal A -> Teleports to Portal B and fires in Portal B's exit direction
+        currentOrigin = new Vector2(portalB.pos.x + portalB.w / 2, portalB.pos.y + portalB.h / 2);
+        currentDir = portalB.exitDir.normalize();
+        currentOrigin = currentOrigin.add(currentDir.mul(portalB.w / 2 + 8));
+        path.push(currentOrigin);
+      } else if (hitType === 'PORTAL_B' && portalA) {
+        // Enters Portal B -> Teleports to Portal A and fires in Portal A's exit direction
+        currentOrigin = new Vector2(portalA.pos.x + portalA.w / 2, portalA.pos.y + portalA.h / 2);
+        currentDir = portalA.exitDir.normalize();
+        currentOrigin = currentOrigin.add(currentDir.mul(portalA.w / 2 + 8));
+        path.push(currentOrigin);
+      } else {
+        // Absorbed by wall or obstacle
+        break;
+      }
     }
 
     return {
       path,
       bounces,
+      sparks: hitSparkLocations,
       crashed: bounces >= maxBounces
     };
   }
 
-  static intersectRaySegment(rayOrigin, rayDir, p1, p2) {
-    const v1 = rayOrigin.sub(p1);
-    const v2 = p2.sub(p1);
-    const v3 = new Vector2(-rayDir.y, rayDir.x);
+  static intersectOrientedPortal(origin, dir, portal) {
+    const box = {
+      x: portal.pos.x,
+      y: portal.pos.y,
+      w: portal.w,
+      h: portal.h
+    };
+    const hit = this.intersectBox(origin, dir, box);
+    if (!hit) return null;
 
-    const dot = v2.dot(v3);
-    if (Math.abs(dot) < 0.000001) return null;
+    // Check if beam enters the portal aperture
+    const dot = dir.dot(portal.entryNormal || new Vector2(-1, 0));
+    if (dot > 0.05) {
+      return hit;
+    }
+    return null;
+  }
 
-    const t1 = (v2.x * v1.y - v2.y * v1.x) / dot;
-    const t2 = v1.dot(v3) / dot;
+  static intersectBox(origin, dir, box) {
+    const left = box.pos ? box.pos.x : box.x;
+    const right = left + box.w;
+    const top = box.pos ? box.pos.y : box.y;
+    const bottom = top + box.h;
 
-    if (t1 >= 0 && (t2 >= 0 && t2 <= 1)) {
+    let tmin = -Infinity, tmax = Infinity;
+
+    if (dir.x !== 0) {
+      const tx1 = (left - origin.x) / dir.x;
+      const tx2 = (right - origin.x) / dir.x;
+      tmin = Math.max(tmin, Math.min(tx1, tx2));
+      tmax = Math.min(tmax, Math.max(tx1, tx2));
+    } else if (origin.x < left || origin.x > right) {
+      return null;
+    }
+
+    if (dir.y !== 0) {
+      const ty1 = (top - origin.y) / dir.y;
+      const ty2 = (bottom - origin.y) / dir.y;
+      tmin = Math.max(tmin, Math.min(ty1, ty2));
+      tmax = Math.min(tmax, Math.max(ty1, ty2));
+    } else if (origin.y < top || origin.y > bottom) {
+      return null;
+    }
+
+    if (tmax >= tmin && tmax > 0) {
+      const t = tmin > 0 ? tmin : tmax;
       return {
-        t: t1,
-        point: rayOrigin.add(rayDir.mul(t1))
+        dist: t,
+        point: origin.add(dir.mul(t))
+      };
+    }
+    return null;
+  }
+
+  static intersectWorldBounds(origin, dir, w, h) {
+    let t = Infinity;
+    if (dir.x > 0) t = Math.min(t, (w - 20 - origin.x) / dir.x);
+    if (dir.x < 0) t = Math.min(t, (20 - origin.x) / dir.x);
+    if (dir.y > 0) t = Math.min(t, (h - 20 - origin.y) / dir.y);
+    if (dir.y < 0) t = Math.min(t, (20 - origin.y) / dir.y);
+
+    if (t > 0 && t < Infinity) {
+      return {
+        dist: t,
+        point: origin.add(dir.mul(t))
       };
     }
     return null;
   }
 }
 
-class Particle {
-  constructor(x, y, vx, vy, radius = 6, mass = 1) {
+class PhysicsParticle {
+  constructor(x, y, vx, vy, radius = 7, color = '#38bdf8') {
     this.pos = new Vector2(x, y);
     this.vel = new Vector2(vx, vy);
-    this.acc = new Vector2(0, 0);
     this.radius = radius;
-    this.mass = mass;
+    this.color = color;
     this.duplicated = false;
-    this.color = '#ff3366';
+    this.pulse = Math.random() * Math.PI * 2;
   }
 
   update(bounds, restitution = 0.98) {
-    this.vel = this.vel.add(this.acc);
     this.pos = this.pos.add(this.vel);
-    this.acc = new Vector2(0, 0);
+    this.pulse += 0.1;
 
-    // Wall collision
     if (this.pos.x - this.radius < bounds.left) {
       this.pos.x = bounds.left + this.radius;
       this.vel.x = -this.vel.x * restitution;
@@ -133,13 +290,25 @@ class Particle {
     }
   }
 
-  applyForce(f) {
-    if (this.mass > 0) {
-      this.acc = this.acc.add(f.div(this.mass));
-    }
+  draw(ctx) {
+    ctx.save();
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(this.pos.x, this.pos.y, this.radius + Math.sin(this.pulse) * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hot center core
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(this.pos.x, this.pos.y, this.radius * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 }
 
 window.Vector2 = Vector2;
+window.ParticleSystem = ParticleSystem;
 window.RaycastSolver = RaycastSolver;
-window.Particle = Particle;
+window.PhysicsParticle = PhysicsParticle;
