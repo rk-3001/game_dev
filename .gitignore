@@ -3,4 +3,10 @@
 __agent__/
 __pycache__/
 .pytest_cache/
+tests/logs/
+tests/reports/
+tests/diffs/
+tests/actual/
+tests/actuals/
 *.png
+!tests/baselines/*.png
