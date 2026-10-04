@@ -1,0 +1,6 @@
+.worktrees/
+.mao/
+__agent__/
+__pycache__/
+.pytest_cache/
+*.png
